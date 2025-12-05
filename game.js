@@ -39,6 +39,7 @@ const revealQueue = [];
 let tokens = 10;
 let score = 0; 
 let flagCount = 0;
+let totalRevealed = 0; // Performance optimization tracker
 let isProcessingQueue = false;
 let GAME_SEED = Math.random(); // Random map by default
 
@@ -320,9 +321,8 @@ function getCell(q, r) {
 }
 
 function isReachable(tq, tr) {
-    const hasRevealed = Array.from(grid.values()).some(c => c.revealed);
-    // If new game, allowed near center
-    if (!hasRevealed) return (Math.abs(tq) <= 1 && Math.abs(tr) <= 1);
+    // Optimized: Check count instead of iterating grid
+    if (totalRevealed === 0) return (Math.abs(tq) <= 1 && Math.abs(tr) <= 1);
 
     const neighbors = getNeighbors(tq, tr);
     for (let n of neighbors) {
@@ -379,6 +379,7 @@ function reveal(q, r) {
 
     cell.revealed = true;
     cell.isMine = false;
+    totalRevealed++;
     cell.count = countMines(q, r);
     score += 10;
     
@@ -436,6 +437,7 @@ function resetGame() {
     tokens = 10;
     score = 0;
     flagCount = 0;
+    totalRevealed = 0;
     camX = canvas.width / 2;
     camY = canvas.height / 2;
     camZoom = 1.0;
@@ -939,6 +941,7 @@ function loadGame() {
                 if (cell.revealed && !cell.isMine) {
                     const [q, r] = parseCellKey(key);
                     cell.count = countMines(q, r);
+                    totalRevealed++; // Increment if revealed
                 }
                 grid.set(key, cell);
             });
