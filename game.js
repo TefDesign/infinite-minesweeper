@@ -231,10 +231,10 @@ function unlockZoneWithTokens(zq, zr) {
 
 function correctZoneErrors(zq, zr) {
     // Iterate hexes in the zone (scan bounding box of Super Hex)
-    // Center approx: zq*K, zr*K. Radius approx K+1.
-    const centerQ = zq * K;
-    const centerR = zr * K;
-    const range = K + 2; 
+    // Center approx: zq*ZONE_RADIUS, zr*ZONE_RADIUS. Radius approx ZONE_RADIUS+1.
+    const centerQ = zq * ZONE_RADIUS;
+    const centerR = zr * ZONE_RADIUS;
+    const range = ZONE_RADIUS + 2; 
 
     for (let r = centerR - range; r <= centerR + range; r++) {
         for (let q = centerQ - range; q <= centerQ + range; q++) {
@@ -243,12 +243,18 @@ function correctZoneErrors(zq, zr) {
              if (id.zq === zq && id.zr === zr) {
                  const key = getCellKey(q, r);
                  const cell = grid.get(key);
-                 if (cell && cell.flagged && !cell.isMine) {
-                     // Incorrect flag! Remove it.
-                     cell.flagged = false;
-                     flagCount--;
+                 if (cell && cell.flagged) {
+                     if (!isMine(q, r)) {
+                         // Incorrect flag! 
+                         // Remove flag AND reveal the safe cell (as penalty/correction)
+                         cell.flagged = false;
+                         cell.revealed = true;
+                         cell.count = countMines(q, r);
+                         flagCount--;
+                         totalRevealed++; // Critical for performance tracker
+                     }
+                     // If it IS a mine, keep the flag (Correct prediction).
                  }
-                 // Optional: If this was the exploded mine (revealed mine),
                  // we might want to "reset" it to hidden so the user can play around it?
                  // Or keep it revealed as a known danger. Note: Revealed mines are danger.
                  // User request: "corrigé". Removing wrong flags is the main point.
