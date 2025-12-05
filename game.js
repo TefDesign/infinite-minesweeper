@@ -40,6 +40,7 @@ let tokens = 10;
 let score = 0; 
 let flagCount = 0;
 let isProcessingQueue = false;
+let GAME_SEED = Math.random(); // Random map by default
 
 // Camera
 let camX = window.innerWidth / 2;
@@ -55,8 +56,9 @@ let keys = { Space: false };
 // --- 3. UTILS & GEOMETRY (HEXAGONAL) ---
 
 const getHash = (u, v, seed = 0) => {
-    // Robust hash for negative coords
-    let h = Math.sin(u * 12.9898 + v * 78.233 + seed) * 43758.5453123;
+    // Robust hash for negative coords. Mix in Global Seed.
+    // Ensure GAME_SEED is used.
+    let h = Math.sin(u * 12.9898 + v * 78.233 + seed + GAME_SEED) * 43758.5453123;
     return h - Math.floor(h);
 };
 
@@ -400,6 +402,7 @@ function toggleFlag(q, r) {
 }
 
 function resetGame() {
+    GAME_SEED = Math.random(); // New Seed on Reset
     grid.clear();
     zones.clear();
     visibleLockedZones.clear();
@@ -831,6 +834,7 @@ function saveGame() {
         tokens, 
         score,
         flagCount, 
+        seed: GAME_SEED, // Save Seed
         cam: { x: camX, y: camY, zoom: camZoom }, 
         grid: savedGrid, 
         zones: savedZones 
@@ -846,6 +850,7 @@ function loadGame() {
         tokens = state.tokens || 10;
         score = state.score || 0;
         flagCount = state.flagCount || 0;
+        GAME_SEED = state.seed || Math.random(); // Restore Seed
         if (state.cam) { 
             camX = state.cam.x; 
             camY = state.cam.y; 
