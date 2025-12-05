@@ -46,7 +46,7 @@ let GAME_SEED = Math.random(); // Random map by default
 // Camera
 let camX = window.innerWidth / 2;
 let camY = window.innerHeight / 2;
-let camZoom = 1.0; 
+let camZoom = 3; // Initial zoom increased 
 
 // Inputs
 let isPanning = false;
@@ -446,7 +446,7 @@ function resetGame() {
     totalRevealed = 0;
     camX = canvas.width / 2;
     camY = canvas.height / 2;
-    camZoom = 1.0;
+    camZoom = 1.5;
     
     localStorage.removeItem(SAVE_KEY);
     

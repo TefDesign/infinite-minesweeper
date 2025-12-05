@@ -1,0 +1,25 @@
+{
+  "name": "infinite-minesweeper",
+  "version": "1.0.0",
+  "description": "",
+  "main": "game.js",
+  "scripts": {
+    "build": "esbuild game.js --minify --format=iife --outfile=game.min.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TefDesign/infinite-minesweeper.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/TefDesign/infinite-minesweeper/issues"
+  },
+  "homepage": "https://github.com/TefDesign/infinite-minesweeper#readme",
+  "devDependencies": {
+    "esbuild": "^0.27.1"
+  }
+}
