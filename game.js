@@ -7,7 +7,7 @@ const MINE_PROBABILITY = 0.28;
 const TOKEN_PROBABILITY = 0.07; // Increased from 0.05
 const ZONE_RADIUS = 5; // Radius of the super-hex zone
 const ZONE_SIZE = 8; // Legacy or unused, keep for safety or remove? Let's keep ZONE_RADIUS as main.
-const SAVE_KEY = 'infinite_minesweeper_save_v3.2_hex'; // V3.2 Balance Patch
+const SAVE_KEY = 'infinite_minesweeper_save_v3.3_hex'; // V3.3 Fix Seed Mismatch
 const NUMBER_COLORS = ['rgba(0,0,0,0)', '#779ECB', '#77DD77', '#FF6961', '#B19CD9', '#FFB347', '#CB99C9'];
 const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 3.0;
@@ -545,7 +545,39 @@ function drawCell(q, r) {
         return; 
     }
 
-    // Content
+    // Ghost Peek: Show content if peeking
+    if (zone.locked && peekZoneKey === zKey && !cell.revealed) {
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        
+        if (isMine(q, r)) {
+            ctx.fillStyle = '#444';
+            ctx.beginPath();
+            ctx.arc(center.x, center.y, HEX_RADIUS/2.5, 0, Math.PI * 2);
+            ctx.fill();
+        } else {
+            const count = countMines(q, r);
+            if (count > 0) {
+                ctx.fillStyle = NUMBER_COLORS[count] || '#000';
+                ctx.font = 'bold 20px Outfit';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(count, center.x, center.y + 2);
+            }
+        }
+        
+        if (hasToken(q, r)) {
+             ctx.fillStyle = COLORS.token;
+             ctx.font = '20px Arial';
+             ctx.textAlign = 'center';
+             ctx.textBaseline = 'middle';
+             ctx.fillText('💎', center.x, center.y + 2);
+        }
+        
+        ctx.restore();
+    }
+
+    // Normal Content
     if (cell.revealed) {
         if (cell.isMine) {
             ctx.fillStyle = '#444';
@@ -560,6 +592,8 @@ function drawCell(q, r) {
             ctx.fillText(cell.count, center.x, center.y + 2);
         }
     } else {
+        // Flags & Tokens on unrevealed (but not ghost peeking override?)
+        // Actually flags are shown on unrevealed.
         if (cell.flagged) {
             ctx.fillStyle = COLORS.flag;
             ctx.font = '24px Arial';
@@ -572,7 +606,10 @@ function drawCell(q, r) {
              ctx.textAlign = 'center';
              ctx.textBaseline = 'middle';
              ctx.fillText('💎', center.x, center.y + 2);
-        } else if (cell.hasToken) {
+        } else if (cell.hasToken && !zone.locked) { // Don't double draw token if ghost handled it?
+             // Ghost draws it if locked & peeked. 
+             // Here we draw it if NOT locked (normal hint) or if locked but not peeked (unreachable hint?).
+             // Logic: hasToken shows up as hint usually.
              ctx.fillStyle = COLORS.token;
              ctx.globalAlpha = 0.5;
              ctx.font = '20px Arial';
