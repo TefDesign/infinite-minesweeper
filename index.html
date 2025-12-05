@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Démineur Infinie - Vibecoding</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="ui-layer">
+        <div id="score-container">
+            <div class="score-item">🚩 <span id="flag-count">0</span></div>
+            <div class="score-item">💎 <span id="score-count">0</span></div>
+        </div>
+        <div id="controls-hint">
+            <p><strong>Espace + Souris</strong> : Se déplacer</p>
+            <p><strong>Clic Gauche</strong> : Révéler</p>
+            <p><strong>Clic Droit</strong> : Drapeau</p>
+            <p><strong>Echap</strong> : Menu</p>
+        </div>
+
+        <!-- Pause Modal -->
+        <div id="pause-modal" class="modal hidden">
+            <div class="modal-content">
+                <button id="btn-close-modal" class="close-btn">&times;</button>
+                <h2>Pause</h2>
+                <p>Que voulez-vous faire ?</p>
+                <button id="btn-restart" class="action-btn">🗑️ Recommencer la partie</button>
+                <div class="modal-hint">La progression actuelle sera perdue.</div>
+            </div>
+        </div>
+
+    </div>
+    <canvas id="game-canvas"></canvas>
+    <script src="game.js"></script>
+</body>
+</html>
