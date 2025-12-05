@@ -338,20 +338,41 @@ function isReachable(tq, tr) {
 
 // --- 5. GAME PLAY LOGIC ---
 
-function reveal(q, r) {
+// Helper to check if a specific cell is effectively locked
+function isCellLocked(q, r) {
     const { zq, zr } = getZoneID_Wrapper(q, r);
     const zone = getZoneData(zq, zr);
+    if (!zone.locked) return false;
     
-    if (zone.locked) return;
+    // Check distance to zone center
+    const centerQ = zq * ZONE_RADIUS;
+    const centerR = zr * ZONE_RADIUS;
+    const dist = hexDistance(q, r, centerQ, centerR);
+    
+    return dist <= ZONE_LOCK_RADIUS;
+}
+
+function reveal(q, r) {
+    if (isCellLocked(q, r)) return; 
 
     const cell = getCell(q, r);
     if (cell.revealed || cell.flagged) return;
 
+    // Calc distance to zone center
+    const { zq, zr } = getZoneID_Wrapper(q, r);
+    const centerQ = zq * ZONE_RADIUS; // Using ZONE_RADIUS as Spacing
+    const centerR = zr * ZONE_RADIUS;
+    const dist = hexDistance(q, r, centerQ, centerR);
+
     if (isMine(q, r)) {
         cell.revealed = true;
         cell.isMine = true; 
+        
+        // Mine triggered -> ALWAYS Lock the Zone (Citadel protects itself)
+        // Even if mine is in the outskirts (corridor), the central island locks down.
         lockZone(zq, zr);
         triggerZoneLock();
+        
         updateUI();
         return;
     }
