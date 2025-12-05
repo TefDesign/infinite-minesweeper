@@ -4,10 +4,10 @@ const HEX_WIDTH = Math.sqrt(3) * HEX_RADIUS;
 const HEX_HEIGHT = 2 * HEX_RADIUS;
 
 const MINE_PROBABILITY = 0.28; 
-const TOKEN_PROBABILITY = 0.07; // Increased from 0.05
-const ZONE_RADIUS = 5; // Radius of the super-hex zone
-const ZONE_SIZE = 8; // Legacy or unused, keep for safety or remove? Let's keep ZONE_RADIUS as main.
-const SAVE_KEY = 'infinite_minesweeper_save_v3.3_hex'; // V3.3 Fix Seed Mismatch
+const TOKEN_PROBABILITY = 0.10; // Increased to 0.10
+const ZONE_RADIUS = 6; // Spacing for Islands
+const ZONE_LOCK_RADIUS = 2; // Real Hexagon Radius (19 cells)
+const SAVE_KEY = 'infinite_minesweeper_save_v3.9_hex'; // V3.9 Hex Islands
 const NUMBER_COLORS = ['rgba(0,0,0,0)', '#779ECB', '#77DD77', '#FF6961', '#B19CD9', '#FFB347', '#CB99C9'];
 const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 3.0;
@@ -78,6 +78,10 @@ function pixelToHex(x, y) {
     const q = (Math.sqrt(3)/3 * x - 1./3 * y) / HEX_RADIUS;
     const r = (2./3 * y) / HEX_RADIUS;
     return hexRound(q, r);
+}
+
+function hexDistance(q1, r1, q2, r2) {
+    return (Math.abs(q1 - q2) + Math.abs(r1 - r2) + Math.abs((q1 + r1) - (q2 + r2))) / 2;
 }
 
 function hexRound(fracQ, fracR) {
@@ -181,11 +185,13 @@ function getZoneData(zq, zr) {
     if (!zones.has(key)) {
         const dist = Math.abs(zq) + Math.abs(zr);
         
-        // Progressive Cost: Starts cheap (~20), gets harder further out.
-        // Base 15 + 2.5 per step + random(0-15)
-        let baseCost = 15 + (dist * 2.5) + (getHash(zq, zr, 99) * 15);
+        // Progressive Cost: Minimum 10.
+        // Base formula: 8 + 2*dist + random(0-5). 
+        // Dist 0 (Center) -> 8..13 -> clamped to 10..13
+        // Dist 1 -> 10..15 -> clamped to 10..15
         
-        if (dist < 1) baseCost = 0; // Start zone free/unlocked
+        const rawCost = 8 + (dist * 2) + (getHash(zq, zr, 99) * 5);
+        const baseCost = Math.max(10, rawCost);
         
         // Default: Unlocked. Locking only happens on mine trigger.
         // Cost is calculated but only used if locked.
@@ -498,13 +504,19 @@ function drawCell(q, r) {
     const center = hexToPixel(q, r);
     const key = getCellKey(q, r);
     const cell = grid.get(key) || { revealed: false, flagged: false, hasToken: hasToken(q, r) };
-    const { zq, zr } = getZoneID_Wrapper(q, r); // Use wrapper
-    const zone = getZoneData(zq, zr);
+    
+    const { zq, zr } = getZoneID_Wrapper(q, r);
+    const zone = getZoneData(zq, zr); // Zone Data still needed for "VisibleLockedZones" tracking? 
+    // Yes, if cell is in locked radius, we add to visible set.
+    
+    const distToCenter = hexDistance(q, r, zq*K, zr*K); // Use K for zone center calculation
+    const cellIsLocked = zone.locked && distToCenter <= ZONE_LOCK_RADIUS;
+    const zKey = getZoneKey(zq, zr);
+
     const reachable = isReachable(q, r);
 
-    // Zone collection
-    const zKey = getZoneKey(zq, zr);
-    if (zone.locked) {
+    // Zone collection (only if locked and within radius)
+    if (cellIsLocked) {
         visibleLockedZones.add(zKey);
     }
 
@@ -515,7 +527,9 @@ function drawCell(q, r) {
     ctx.moveTo(corners[0].x, corners[0].y);
     for(let i=1; i<6; i++) ctx.lineTo(corners[i].x, corners[i].y);
     ctx.closePath();
-
+    
+    // ... Fill logic ...
+    
     if (cell.revealed) {
         ctx.fillStyle = cell.isMine ? COLORS.revealedMine : COLORS.revealedSafe;
     } else {
@@ -529,24 +543,23 @@ function drawCell(q, r) {
     ctx.fill();
     
     // Zone Border visualization
-    if (zone.locked) {
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)'; // Stronger border for locked zones
+    if (cellIsLocked) {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)'; 
         ctx.lineWidth = 2;
     } else {
         ctx.strokeStyle = 'rgba(255,255,255,0.2)';
         ctx.lineWidth = 1;
     }
-    
     ctx.stroke();
 
-    if (zone.locked && peekZoneKey !== zKey) {
+    if (cellIsLocked && peekZoneKey !== zKey) {
         ctx.fillStyle = COLORS.zoneLockedOverlay;
         ctx.fill();
         return; 
     }
 
     // Ghost Peek: Show content if peeking
-    if (zone.locked && peekZoneKey === zKey && !cell.revealed) {
+    if (cellIsLocked && peekZoneKey === zKey && !cell.revealed) {
         ctx.save();
         ctx.globalAlpha = 0.5;
         
